@@ -45,6 +45,11 @@ def transactions_add():
 
         vault = vaults[int(choice) - 1]
 
+        current_balance = get_vault_balance(vault)
+        typer.echo(
+            f"Current balance for {vault}: [{CYAN}${current_balance:,.2f}{RESET}]"
+        )
+
         date_str = typer.prompt(
             "Deposit date (YYYY-MM-DD, blank = today)", default=""
         ).strip()
@@ -54,11 +59,23 @@ def transactions_add():
         amount_str = typer.prompt("Deposit amount").strip()
         amount = float(amount_str)
 
+        new_balance = current_balance + amount
+        typer.echo(
+            f"New balance after this transaction: [{CYAN}${new_balance:,.2f}{RESET}]"
+        )
+
         with open(TRANSACTIONS_FILE, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([vault, date_str, amount])
 
-        typer.echo(f"Added ${amount:.2f} to {vault} on {date_str}.\n")
+        if amount >= 0:
+            typer.echo(
+                f"Added [{GREEN}+${amount:.2f}{RESET}] to {vault} on {date_str}.\n"
+            )
+        else:
+            typer.echo(
+                f"Withdrew [{RED}-${abs(amount):.2f}{RESET}] from {vault} on {date_str}.\n"
+            )
 
 
 @transactions_app.command("list")
@@ -403,3 +420,18 @@ def transactions_stats(
     typer.echo(f"{BOLD}Date Range:{RESET}")
     typer.echo(f"  First Tx:       {tx[0]['date']}")
     typer.echo(f"  Most Recent Tx: {tx[-1]['date']}\n")
+
+
+def get_vault_balance(vault_name: str) -> float:
+    transactions = load_transactions()
+    balance = 0.0
+
+    for tx in transactions:
+        # Skip malformed entries just in case
+        if not tx or "vault" not in tx or "amount" not in tx:
+            continue
+
+        if tx["vault"] == vault_name:
+            balance += float(tx["amount"])
+
+    return balance
