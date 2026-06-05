@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from vaults.colors import BOLD, CYAN, GREEN, RED, RESET
+from vaults.colors import BOLD, CYAN, GREEN, RED, RESET, YELLOW
 from vaults.utils import (
     TRANSACTIONS_FILE,
     ensure_all,
@@ -63,17 +63,9 @@ def transactions_add():
 
         if amount < 0 and new_balance < 0:
             typer.echo(
-                typer.style(
-                    f"❌ Transaction denied: this would overdraw the {vault} vault.",
-                    fg="red",
-                )
+                f"❌ {RED}Transaction denied: this would overdraw the {vault} vault.{RESET}"
             )
-            typer.echo(
-                typer.style(
-                    f"Current balance: ${current_balance:,.2f}",
-                    fg="yellow",
-                )
-            )
+            typer.echo(f"Current balance: {YELLOW}${current_balance:,.2f}{RESET}")
             raise typer.Exit()
 
         typer.echo(
