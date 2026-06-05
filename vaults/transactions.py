@@ -4,7 +4,20 @@ from typing import Optional
 
 import typer
 
-from vaults.colors import BOLD, CYAN, GREEN, RED, RESET, YELLOW
+from vaults.colors import (
+    BOLD,
+    CYAN,
+    GREEN,
+    RED,
+    RESET,
+    YELLOW,
+    bold,
+    currency,
+    error,
+    label,
+    success,
+    warning,
+)
 from vaults.utils import (
     TRANSACTIONS_FILE,
     ensure_all,
@@ -47,7 +60,7 @@ def transactions_add():
 
         current_balance = get_vault_balance(vault)
         typer.echo(
-            f"Current balance for {vault}: [{CYAN}${current_balance:,.2f}{RESET}]"
+            f"Current balance for {vault}: [" + label(f"${current_balance:,.2f}") + "]"
         )
 
         date_str = typer.prompt(
@@ -63,13 +76,15 @@ def transactions_add():
 
         if amount < 0 and new_balance < 0:
             typer.echo(
-                f"❌ {RED}Transaction denied: this would overdraw the {vault} vault.{RESET}"
+                error(f"❌ Transaction denied: this would overdraw the {vault} vault.")
             )
-            typer.echo(f"Current balance: {YELLOW}${current_balance:,.2f}{RESET}")
+            typer.echo(warning(f"Current balance: ${current_balance:,.2f}"))
             raise typer.Exit()
 
         typer.echo(
-            f"New balance after this transaction: [{CYAN}${new_balance:,.2f}{RESET}]"
+            f"New balance after this transaction: ["
+            + label(f"${new_balance:,.2f}")
+            + "]"
         )
 
         with open(TRANSACTIONS_FILE, "a", newline="") as f:
@@ -77,11 +92,9 @@ def transactions_add():
             writer.writerow([vault, date_str, amount])
 
         if amount >= 0:
-            typer.echo(f"Added [{color_amount(amount)}] to {vault} on {date_str}.\n")
+            typer.echo(f"Added [{currency(amount)}] to {vault} on {date_str}.\n")
         else:
-            typer.echo(
-                f"Withdrew [{color_amount(amount)}] from {vault} on {date_str}.\n"
-            )
+            typer.echo(f"Withdrew [{currency(amount)}] from {vault} on {date_str}.\n")
 
 
 @transactions_app.command("list")
@@ -142,7 +155,7 @@ def transactions_list(
 
     # GROUP BY VAULT MODE
     if group_by_vault:
-        typer.echo(f"\n{BOLD}Transactions Grouped by Vault:{RESET}\n")
+        typer.echo(bold("\nTransactions Grouped by Vault:\n"))
 
         # Build groups
         groups = {}
@@ -153,8 +166,8 @@ def transactions_list(
         grand_withdrawals = 0.0
 
         for vname, items in groups.items():
-            typer.echo(f"{BOLD}{CYAN}{vname}{RESET}")
-            typer.echo(f"{BOLD}{'Date':<12}  {'Amount':>12}{RESET}")
+            typer.echo(label(f"{vname}", bold=True))
+            typer.echo(bold(f"{'Date':<12}  {'Amount':>12}"))
             typer.echo("-" * 30)
 
             deposits = 0.0
@@ -163,35 +176,32 @@ def transactions_list(
             for t in items:
                 date_str = f"{t['date']}"
                 amt = t["amount"]
+                amt_str = currency(amt)
 
                 if amt >= 0:
-                    amt_str = f"{GREEN}+${amt:,.2f}{RESET}"
                     deposits += amt
                 else:
-                    amt_str = f"{RED}-${abs(amt):,.2f}{RESET}"
-                    withdrawals += abs(amt)
+                    withdrawals += amt
 
                 typer.echo(f"{date_str:<12}  {amt_str:>12}")
 
-            net = deposits - withdrawals
-            net_color = GREEN if net >= 0 else RED
+            net = deposits + withdrawals
 
             typer.echo("-" * 30)
-            typer.echo(f"  Deposits:    {GREEN}${deposits:,.2f}{RESET}")
-            typer.echo(f"  Withdrawals: {RED}-${withdrawals:,.2f}{RESET}")
-            typer.echo(f"  Net Change:  {net_color}${net:,.2f}{RESET}\n")
+            typer.echo(f"  Deposits:    {currency(deposits)}")
+            typer.echo(f"  Withdrawals: {currency(withdrawals)}")
+            typer.echo(f"  Net Change:  {currency(net)}\n")
 
             grand_deposits += deposits
             grand_withdrawals += withdrawals
 
         # Grand totals
-        typer.echo(f"{BOLD}GRAND TOTALS:{RESET}")
-        net = grand_deposits - grand_withdrawals
-        net_color = GREEN if net >= 0 else RED
+        typer.echo(bold(f"GRAND TOTALS:"))
+        net = grand_deposits + grand_withdrawals
 
-        typer.echo(f"  Deposits:    {GREEN}${grand_deposits:,.2f}{RESET}")
-        typer.echo(f"  Withdrawals: {RED}-${grand_withdrawals:,.2f}{RESET}")
-        typer.echo(f"  Net Change:  {net_color}${net:,.2f}{RESET}\n")
+        typer.echo(f"  Deposits:    {currency(grand_deposits)}")
+        typer.echo(f"  Withdrawals: {currency(grand_withdrawals)}")
+        typer.echo(f"  Net Change:  {currency(net)}\n")
 
         # CSV export still works
         if csv_export:
@@ -201,17 +211,14 @@ def transactions_list(
                 for t in tx:
                     writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
 
-            typer.echo(
-                f"{GREEN}Exported {len(tx)} transactions to {csv_export}{RESET}\n"
-            )
+            typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 
         return
 
     # GROUP BY MONTH MODE
     if group_by_month:
-        typer.echo(f"\n{BOLD}Transactions Grouped by Month:{RESET}\n")
+        typer.echo(bold("\nTransactions Grouped by Month:\n"))
 
-        # Build groups: { "2026-05": [tx, tx, ...], ... }
         groups = {}
         for t in tx:
             key = f"{t['date'].year}-{t['date'].month:02d}"
@@ -221,8 +228,8 @@ def transactions_list(
         grand_withdrawals = 0.0
 
         for month_key, items in sorted(groups.items()):
-            typer.echo(f"{BOLD}{CYAN}{month_key}{RESET}")
-            typer.echo(f"{BOLD}{'Date':<12}  {'Vault':<20}  {'Amount':>12}{RESET}")
+            typer.echo(label(f"{month_key}", bold=True))
+            typer.echo(bold(f"{'Date':<12}  {'Vault':<20}  {'Amount':>12}"))
             typer.echo("-" * 48)
 
             deposits = 0.0
@@ -232,37 +239,34 @@ def transactions_list(
                 date_str = f"{t['date']}"
                 vault_str = t["vault"]
                 amt = t["amount"]
+                amt_str = currency(amt)
 
                 if amt >= 0:
-                    amt_str = f"{GREEN}+${amt:,.2f}{RESET}"
                     deposits += amt
                 else:
-                    amt_str = f"{RED}-${abs(amt):,.2f}{RESET}"
-                    withdrawals += abs(amt)
+                    withdrawals += amt
 
                 typer.echo(
                     f"{date_str:<12}  {CYAN}{vault_str:<20}{RESET}  {amt_str:>12}"
                 )
 
-            net = deposits - withdrawals
-            net_color = GREEN if net >= 0 else RED
+            net = deposits + withdrawals
 
             typer.echo("-" * 48)
-            typer.echo(f"  Deposits:    {GREEN}${deposits:,.2f}{RESET}")
-            typer.echo(f"  Withdrawals: {RED}-${withdrawals:,.2f}{RESET}")
-            typer.echo(f"  Net Change:  {net_color}${net:,.2f}{RESET}\n")
+            typer.echo(f"  Deposits:    {currency(deposits)}")
+            typer.echo(f"  Withdrawals: {currency(withdrawals)}")
+            typer.echo(f"  Net Change:  {currency(net)}\n")
 
             grand_deposits += deposits
             grand_withdrawals += withdrawals
 
         # Grand totals
-        typer.echo(f"{BOLD}GRAND TOTALS:{RESET}")
-        net = grand_deposits - grand_withdrawals
-        net_color = GREEN if net >= 0 else RED
+        typer.echo(bold("GRAND TOTALS:"))
+        net = grand_deposits + grand_withdrawals
 
-        typer.echo(f"  Deposits:    {GREEN}${grand_deposits:,.2f}{RESET}")
-        typer.echo(f"  Withdrawals: {RED}-${grand_withdrawals:,.2f}{RESET}")
-        typer.echo(f"  Net Change:  {net_color}${net:,.2f}{RESET}\n")
+        typer.echo(f"  Deposits:    {currency(grand_deposits)}")
+        typer.echo(f"  Withdrawals: {currency(grand_withdrawals)}")
+        typer.echo(f"  Net Change:  {currency(net)}\n")
 
         # CSV export still works
         if csv_export:
@@ -272,15 +276,13 @@ def transactions_list(
                 for t in tx:
                     writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
 
-            typer.echo(
-                f"{GREEN}Exported {len(tx)} transactions to {csv_export}{RESET}\n"
-            )
+            typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 
         return
 
     # Table header
-    typer.echo(f"\n{BOLD}Transactions:{RESET}")
-    typer.echo(f"{BOLD}{'Date':<12}  {'Vault':<20}  {'Amount':>12}{RESET}")
+    typer.echo(bold(f"\nTransactions:"))
+    typer.echo(bold(f"{'Date':<12}  {'Vault':<20}  {'Amount':>12}"))
     typer.echo("-" * 48)
 
     total_deposits = 0.0
@@ -290,27 +292,25 @@ def transactions_list(
     for t in tx:
         date_str = f"{t['date']}"
         vault_str = t["vault"]
-
         amount = t["amount"]
+        amount_str = currency(amount)
+
         if amount >= 0:
-            amount_str = f"{GREEN}+${amount:,.2f}{RESET}"
             total_deposits += amount
         else:
-            amount_str = f"{RED}-${abs(amount):,.2f}{RESET}"
-            total_withdrawals += abs(amount)
+            total_withdrawals += amount
 
-        typer.echo(f"{date_str:<12}  {CYAN}{vault_str:<20}{RESET}  {amount_str:>12}")
+        typer.echo(f"{date_str:<12}  {label(f'{vault_str:<20}')}  {amount_str:>12}")
 
     typer.echo("-" * 48)
 
     # Totals
-    net = total_deposits - total_withdrawals
-    net_color = GREEN if net >= 0 else RED
+    net = total_deposits + total_withdrawals
 
-    typer.echo(f"{BOLD}Totals:{RESET}")
-    typer.echo(f"  Deposits:    {GREEN}${total_deposits:,.2f}{RESET}")
-    typer.echo(f"  Withdrawals: {RED}-${total_withdrawals:,.2f}{RESET}")
-    typer.echo(f"  Net Change:  {net_color}${net:,.2f}{RESET}\n")
+    typer.echo(bold("Totals:"))
+    typer.echo(f"  Deposits:    {currency(total_deposits)}")
+    typer.echo(f"  Withdrawals: {currency(total_withdrawals)}")
+    typer.echo(f"  Net Change:  {currency(net)}\n")
 
     # CSV export
     if csv_export:
@@ -320,7 +320,7 @@ def transactions_list(
             for t in tx:
                 writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
 
-        typer.echo(f"{GREEN}Exported {len(tx)} transactions to {csv_export}{RESET}\n")
+        typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 
 
 @transactions_app.command("stats")
