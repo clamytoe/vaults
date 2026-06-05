@@ -145,10 +145,6 @@ def transactions_list(
         until_date = parse_date(until)
         tx = [t for t in tx if t["date"] <= until_date]
 
-    # if not tx:
-    #     typer.echo("No transactions match the selected filters.")
-    #     raise typer.Exit()
-
     # Sort by date
     tx.sort(key=lambda t: t["date"])
 
