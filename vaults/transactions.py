@@ -69,12 +69,10 @@ def transactions_add():
             writer.writerow([vault, date_str, amount])
 
         if amount >= 0:
-            typer.echo(
-                f"Added [{GREEN}+${amount:.2f}{RESET}] to {vault} on {date_str}.\n"
-            )
+            typer.echo(f"Added [{color_amount(amount)}] to {vault} on {date_str}.\n")
         else:
             typer.echo(
-                f"Withdrew [{RED}-${abs(amount):.2f}{RESET}] from {vault} on {date_str}.\n"
+                f"Withdrew [{color_amount(amount)}] from {vault} on {date_str}.\n"
             )
 
 
@@ -420,6 +418,15 @@ def transactions_stats(
     typer.echo(f"{BOLD}Date Range:{RESET}")
     typer.echo(f"  First Tx:       {tx[0]['date']}")
     typer.echo(f"  Most Recent Tx: {tx[-1]['date']}\n")
+
+
+def color_amount(amount: float) -> str:
+    if amount >= 0:
+        color = "green"
+    else:
+        color = "red"
+        amount = abs(amount)
+    return typer.style(f"${amount:,.2f}", fg=color)
 
 
 def get_vault_balance(vault_name: str) -> float:
