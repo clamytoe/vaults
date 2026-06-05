@@ -1,0 +1,63 @@
+[project]
+name = "vaults"
+version = "0.1.0"
+description = "A personal vault ledger with interest, statements, and analytics."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+authors = [
+    { name = "Martin Uribe", email = "clamytoe@gmail.com" }
+]
+
+license = { text = "MIT" }
+dependencies = [
+    "python-dotenv",
+    "typer",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "ruff",
+    "mypy",
+]
+
+[project.urls]
+Homepage = "https://github.com/clamytoe/vaults/"
+Issues = "https://github.com/clamytoe/vaults/issues"
+
+
+[project.scripts]
+vaults = "vaults.cli:app"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# ---------------------------
+# Tooling Configuration
+# ---------------------------
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+select = ["D", "E", "F", "I"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.13.3"
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+no_implicit_optional = false
