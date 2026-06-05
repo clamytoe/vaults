@@ -60,6 +60,22 @@ def transactions_add():
         amount = float(amount_str)
 
         new_balance = current_balance + amount
+
+        if amount < 0 and new_balance < 0:
+            typer.echo(
+                typer.style(
+                    f"❌ Transaction denied: this would overdraw the {vault} vault.",
+                    fg="red",
+                )
+            )
+            typer.echo(
+                typer.style(
+                    f"Current balance: ${current_balance:,.2f}",
+                    fg="yellow",
+                )
+            )
+            raise typer.Exit()
+
         typer.echo(
             f"New balance after this transaction: [{CYAN}${new_balance:,.2f}{RESET}]"
         )
