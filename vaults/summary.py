@@ -110,7 +110,9 @@ def print_summary(summary_data):
     for v, s in summary_data.items():
         principal = s["deposits"] - s["withdrawals"]
         interest = s["interest"]
-        total = s["end"]
+        if v == "Interest":
+            interest = 0
+        total = principal + interest
 
         grand_principal += principal
         grand_interest += interest
