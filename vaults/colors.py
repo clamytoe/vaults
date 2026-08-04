@@ -22,7 +22,7 @@ def currency(value: float) -> str:
         sign = "-"
     else:
         color = "white"
-    return typer.style(f"{sign}${abs(value):,.2f}", fg=color, bold=True)
+    return typer.style(f"{sign}${abs(value):>11,.2f}", fg=color, bold=True)
 
 
 def bold(text: str) -> str:

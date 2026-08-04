@@ -20,6 +20,7 @@ from vaults.colors import (
 )
 from vaults.utils import (
     TRANSACTIONS_FILE,
+    HEADER,
     ensure_all,
     load_transactions,
     load_vaults,
@@ -87,9 +88,11 @@ def transactions_add():
             + "]"
         )
 
+        note = typer.prompt("Note (optional)", default="").strip()
+
         with open(TRANSACTIONS_FILE, "a", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([vault, date_str, amount])
+            writer.writerow([vault, date_str, amount, note])
 
         if amount >= 0:
             typer.echo(f"Added [{currency(amount)}] to {vault} on {date_str}.\n")
@@ -177,6 +180,7 @@ def transactions_list(
                 date_str = f"{t['date']}"
                 amt = t["amount"]
                 amt_str = currency(amt)
+                note = (t.get("note") or t.get("notes") or "").strip()
 
                 if amt >= 0:
                     deposits += amt
@@ -207,9 +211,10 @@ def transactions_list(
         if csv_export:
             with open(csv_export, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["date", "vault", "amount"])
+                writer.writerow(HEADER)
                 for t in tx:
-                    writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
+                    note = (t.get("note") or t.get("notes") or "").strip()
+                    writer.writerow([t["date"].isoformat(), t["vault"], t["amount"], note])
 
             typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 
@@ -229,8 +234,8 @@ def transactions_list(
 
         for month_key, items in sorted(groups.items()):
             typer.echo(label(f"{month_key}", bold=True))
-            typer.echo(bold(f"{'Date':<12}  {'Vault':<20}  {'Amount':>12}"))
-            typer.echo("-" * 48)
+            typer.echo(bold(f"{'Date':<12}  {'Vault':<20}  {'Amount':>12}   {'Note':<30}"))
+            typer.echo("-" * 80)
 
             deposits = 0.0
             withdrawals = 0.0
@@ -240,6 +245,7 @@ def transactions_list(
                 vault_str = t["vault"]
                 amt = t["amount"]
                 amt_str = currency(amt)
+                note = (t.get("note") or t.get("notes") or "").strip()
 
                 if amt >= 0:
                     deposits += amt
@@ -247,12 +253,12 @@ def transactions_list(
                     withdrawals += amt
 
                 typer.echo(
-                    f"{date_str:<12}  {CYAN}{vault_str:<20}{RESET}  {amt_str:>12}"
+                    f"{date_str:<12}  {CYAN}{vault_str:<20}{RESET}  {amt_str:>12}  {note:<30}"
                 )
 
             net = deposits + withdrawals
 
-            typer.echo("-" * 48)
+            typer.echo("-" * 80)
             typer.echo(f"  Deposits:    {currency(deposits)}")
             typer.echo(f"  Withdrawals: {currency(withdrawals)}")
             typer.echo(f"  Net Change:  {currency(net)}\n")
@@ -272,9 +278,10 @@ def transactions_list(
         if csv_export:
             with open(csv_export, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["date", "vault", "amount"])
+                writer.writerow(HEADER)
                 for t in tx:
-                    writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
+                    note = (t.get("note") or t.get("notes") or "").strip()
+                    writer.writerow([t["date"].isoformat(), t["vault"], t["amount"], note])
 
             typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 
@@ -282,8 +289,8 @@ def transactions_list(
 
     # Table header
     typer.echo(bold(f"\nTransactions:"))
-    typer.echo(bold(f"{'Date':<12}  {'Vault':<20}  {'Amount':>12}"))
-    typer.echo("-" * 48)
+    typer.echo(bold(f"{'Date':<12}  {'Vault':<15}  {'Amount':>12}   {'Note':<30}"))
+    typer.echo("-" * 80)
 
     total_deposits = 0.0
     total_withdrawals = 0.0
@@ -300,9 +307,10 @@ def transactions_list(
         else:
             total_withdrawals += amount
 
-        typer.echo(f"{date_str:<12}  {label(f'{vault_str:<20}')}  {amount_str:>12}")
+        note = (t.get("note") or t.get("notes") or "").strip()
+        typer.echo(f"{date_str:<12}  {label(f'{vault_str:<15}')}  {amount_str:>12}  {note:<30}")
 
-    typer.echo("-" * 48)
+    typer.echo("-" * 80)
 
     # Totals
     net = total_deposits + total_withdrawals
@@ -316,9 +324,10 @@ def transactions_list(
     if csv_export:
         with open(csv_export, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["date", "vault", "amount"])
+            writer.writerow(HEADER)
             for t in tx:
-                writer.writerow([t["date"].isoformat(), t["vault"], t["amount"]])
+                note = (t.get("note") or t.get("notes") or "").strip()
+                writer.writerow([t["date"].isoformat(), t["vault"], t["amount"], note])
 
         typer.echo(success(f"Exported {len(tx)} transactions to {csv_export}\n"))
 

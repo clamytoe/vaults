@@ -12,6 +12,7 @@ VAULTS_FILE = DATA_DIR / "vaults.csv"
 TRANSACTIONS_FILE = DATA_DIR / "transactions.csv"
 RATES_FILE = DATA_DIR / "rates.csv"
 POSTINGS_FILE = DATA_DIR / "posting.csv"
+HEADER = ["date", "vault", "amount", "note"]
 
 START_DATE = "2026-04-01"
 
@@ -35,7 +36,7 @@ def ensure_transactions_file():
     if not os.path.exists(TRANSACTIONS_FILE):
         with open(TRANSACTIONS_FILE, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["vault", "date", "amount"])
+            writer.writerow(HEADER)
 
 
 def ensure_rates_file():
@@ -133,6 +134,7 @@ def load_transactions():
                     "vault": row["vault"],
                     "date": effective_date,
                     "amount": float(row["amount"]),
+                    "note": row["note"] if "note" in row else "",
                 }
             )
     return tx
