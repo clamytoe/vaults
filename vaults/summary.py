@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
+import calendar
 import typer
 
 from vaults.balances import get_daily_balances
@@ -35,11 +36,16 @@ def summary(
         raise typer.Exit()
 
     transactions = load_transactions()
+    last_transaction_date = max(t["date"] for t in transactions)
 
     if end:
-        end_date = parse_date(end)
+        end_date = normalize_end_date(end)
     else:
         end_date = date.today()
+
+    # Ensure end date is not after the last transaction date
+    if end_date > last_transaction_date:
+        end_date = last_transaction_date
 
     # Determine start date from transactions
     if transactions:
@@ -53,7 +59,7 @@ def summary(
         daily_balances, daily_interest, transactions, vaults, start_date, end_date
     )
 
-    print_summary(summary_data)
+    print_summary(summary_data, end_date)
 
 
 def summarize_month(
@@ -66,28 +72,32 @@ def summarize_month(
         if t["vault"] in tx_by_vault:
             tx_by_vault[t["vault"]].append(t)
 
-    for v in vaults:
-        start = daily_balances[v][start_date]
-        end = daily_balances[v][end_date]
-        deposits = sum(
-            t["amount"]
-            for t in tx_by_vault[v]
-            if t["amount"] > 0 and start_date <= t["date"] <= end_date
-        )
-        withdrawals = sum(
-            -t["amount"]
-            for t in tx_by_vault[v]
-            if t["amount"] < 0 and start_date <= t["date"] <= end_date
-        )
-        interest = sum(daily_interest[v].values())
+    try:
+        for v in vaults:
+            start = daily_balances[v][start_date]
+            end = daily_balances[v][end_date]
+            deposits = sum(
+                t["amount"]
+                for t in tx_by_vault[v]
+                if t["amount"] > 0 and start_date <= t["date"] <= end_date
+            )
+            withdrawals = sum(
+                -t["amount"]
+                for t in tx_by_vault[v]
+                if t["amount"] < 0 and start_date <= t["date"] <= end_date
+            )
+            interest = sum(daily_interest[v].values())
 
-        summary[v] = {
-            "start": start,
-            "end": end,
-            "deposits": deposits,
-            "withdrawals": withdrawals,
-            "interest": interest,
-        }
+            summary[v] = {
+                "start": start,
+                "end": end,
+                "deposits": deposits,
+                "withdrawals": withdrawals,
+                "interest": interest,
+            }
+    except KeyError as e:
+        typer.echo(f"Error: There is no data before {e.args[0]}.")
+        raise typer.Exit()
 
     return summary
 
@@ -95,8 +105,8 @@ def summarize_month(
 # ==============================
 # SUMMARY
 # ==============================
-def print_summary(summary_data):
-    print("\nVault Summary")
+def print_summary(summary_data, end_date):
+    print("\nVault Summary", f"{end_date.isoformat():>47}")
     print("-------------------------------------------------------------")
     print(
         f"{BOLD}{'Vault Name':<15} {'Principal':>12} {'Interest':>12} {'Total':>12}{RESET}"
@@ -133,3 +143,26 @@ def print_summary(summary_data):
         f"{BOLD}${grand_total:>11,.2f}{RESET}"
     )
     print("-------------------------------------------------------------\n")
+
+
+# ==============================
+# NORMALIZE END DATE
+# ==============================
+def normalize_end_date(end_str):
+    """
+    Accepts either YYYY-MM-DD or YYYY-MM.
+    Returns a datetime.date representing the final day of that period.
+    """
+    try:
+        # Case 1: full date YYYY-MM-DD
+        return datetime.strptime(end_str, "%Y-%m-%d").date()
+    except ValueError:
+        pass
+
+    try:
+        # Case 2: year-month YYYY-MM → convert to last day of month
+        year, month = map(int, end_str.split("-"))
+        last_day = calendar.monthrange(year, month)[1]
+        return datetime(year, month, last_day).date()
+    except Exception:
+        raise ValueError(f"Invalid --end value: {end_str}")
