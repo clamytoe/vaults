@@ -1,5 +1,99 @@
 from datetime import date
-from vaults.summary import summarize_month
+from typer.testing import CliRunner
+from vaults.cli import app as root_app
+from vaults.summary import normalize_end_date, print_summary, summarize_month
+
+import vaults.summary as s
+import vaults.utils as u
+import vaults.balances as b
+import vaults.interest as i
+
+runner = CliRunner()
+
+
+class FakeDate(date):
+    @classmethod
+    def today(cls):
+        return date(2026, 1, 1)
+
+
+def test_normalize_end_date_full_date():
+    assert normalize_end_date("2026-01-15") == date(2026, 1, 15)
+
+
+def test_normalize_end_date_year_month():
+    assert normalize_end_date("2026-02") == date(2026, 2, 28)
+
+
+def test_normalize_end_date_invalid():
+    try:
+        normalize_end_date("invalid")
+    except ValueError as e:
+        assert "invalid" in str(e).lower()
+
+
+def test_print_summary_executes(capsys):
+    summary_data = {
+        "A": {
+            "start": 100,
+            "end": 200,
+            "deposits": 100,
+            "withdrawals": 0,
+            "interest": 5,
+        }
+    }
+    end_date = date(2026, 1, 31)
+
+    print_summary(summary_data, end_date)
+    output = capsys.readouterr().out
+
+    assert "Vault Summary" in output
+    assert "A" in output
+    assert "GRAND TOTAL" in output
+
+
+def test_summary_cli_executes(monkeypatch):
+    # Patch date.today() used inside summary_cli
+    monkeypatch.setattr(s, "date", FakeDate)
+
+    # Patch utils
+    monkeypatch.setattr(u, "ensure_all", lambda: None)
+    monkeypatch.setattr(u, "load_vaults", lambda: ["A"])
+    monkeypatch.setattr(u, "load_rates", lambda: {"A": 0.05})
+    monkeypatch.setattr(
+        u,
+        "load_transactions",
+        lambda: [{"vault": "A", "date": date(2026, 1, 1), "amount": 100}],
+    )
+
+    # Patch balances + interest
+    monkeypatch.setattr(
+        b, "get_daily_balances", lambda *args: {"A": {date(2026, 1, 1): 100}}
+    )
+    monkeypatch.setattr(
+        i, "get_daily_interest", lambda *args: {"A": {date(2026, 1, 1): 1}}
+    )
+
+    # Patch summarize_month
+    monkeypatch.setattr(
+        s,
+        "summarize_month",
+        lambda *args: {
+            "A": {
+                "start": 100,
+                "end": 100,
+                "deposits": 100,
+                "withdrawals": 0,
+                "interest": 1,
+            }
+        },
+    )
+
+    # Invoke the REAL CLI app
+    result = runner.invoke(root_app, ["summary"])
+
+    assert result.exit_code == 0
+    assert "Vault Summary" in result.output
 
 
 def test_summary_empty_month():
@@ -11,7 +105,9 @@ def test_summary_empty_month():
     transactions = []
     vaults = ["A"]
 
-    summary = summarize_month(daily_balances, daily_interest, transactions, vaults, start, end)
+    summary = summarize_month(
+        daily_balances, daily_interest, transactions, vaults, start, end
+    )
 
     assert summary["A"]["start"] == 0
     assert summary["A"]["end"] == 0
@@ -41,7 +137,9 @@ def test_summary_with_balances_and_interest():
     transactions = []
     vaults = ["A"]
 
-    summary = summarize_month(daily_balances, daily_interest, transactions, vaults, start, end)
+    summary = summarize_month(
+        daily_balances, daily_interest, transactions, vaults, start, end
+    )
 
     assert summary["A"]["start"] == 100
     assert summary["A"]["end"] == 200
@@ -70,7 +168,9 @@ def test_summary_with_deposits_and_withdrawals():
 
     vaults = ["A"]
 
-    summary = summarize_month(daily_balances, daily_interest, transactions, vaults, start, end)
+    summary = summarize_month(
+        daily_balances, daily_interest, transactions, vaults, start, end
+    )
 
     assert summary["A"]["start"] == 100
     assert summary["A"]["end"] == 150
@@ -97,7 +197,9 @@ def test_summary_multiple_vaults():
     ]
     vaults = ["A", "B"]
 
-    summary = summarize_month(daily_balances, daily_interest, transactions, vaults, start, end)
+    summary = summarize_month(
+        daily_balances, daily_interest, transactions, vaults, start, end
+    )
 
     assert summary["A"]["start"] == 100
     assert summary["A"]["end"] == 200
