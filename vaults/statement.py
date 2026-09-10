@@ -1,7 +1,9 @@
 from datetime import date, timedelta
+from os import environ
 from typing import Optional
 
 import typer
+from dotenv import load_dotenv
 
 from vaults.balances import get_daily_balances
 from vaults.colors import BLUE, BOLD, CYAN, GREEN, RED, RESET
@@ -14,6 +16,8 @@ from vaults.utils import (
     load_transactions,
     load_vaults,
 )
+
+load_dotenv()
 
 
 # ==============================
@@ -52,16 +56,13 @@ def vault_statement(
 
     # Print header
     bar = "-" * 83
-    typer.echo(
-        f"{BOLD}-------------------------------------------------------------{RESET}"
-    )
-    typer.echo(f"{BOLD}                 CAPITAL ONE VAULT STATEMENT{RESET}")
-    typer.echo(
-        f"{BOLD}                  {start_date:%B 1} – {end_date:%B %d, %Y}{RESET}"
-    )
-    typer.echo(
-        f"{BOLD}-------------------------------------------------------------{RESET}\n"
-    )
+    bank_name = environ.get("BANK_NAME", "BANK")
+    title = f"{bank_name}: VAULT STATEMENT"
+    date_range = f"{start_date:%B 1} - {end_date:%B %d, %Y}"
+    typer.echo(f"{BOLD}{bar}{RESET}")
+    typer.echo(f"{BOLD}{title.center(83)}{RESET}")
+    typer.echo(f"{BOLD}{date_range.center(83)}{RESET}")
+    typer.echo(f"{BOLD}{bar}{RESET}\n")
 
     # APY
     apy = rates[-1]["apy"] * 100
@@ -73,11 +74,7 @@ def vault_statement(
     starting_total = sum(s["start"] for s in summary_data.values())
     ending_total = sum(s["end"] for s in summary_data.values())
     typer.echo(f"     Starting Balance: {BLUE}${starting_total:,.2f}{RESET}")
-    typer.echo(f"       Ending Balance:   {BLUE}${ending_total:,.2f}{RESET}")
-
-    # Vault breakdown
-    typer.echo("VAULT BREAKDOWN")
-    typer.echo(bar + "\n")
+    typer.echo(f"       Ending Balance: {BLUE}${ending_total:,.2f}{RESET}\n")
 
     COL_VAULT = 15
     COL_MONEY = 12
