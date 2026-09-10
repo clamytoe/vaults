@@ -1,7 +1,3 @@
-from os import environ
-
-from dotenv import load_dotenv
-
 from vaults import __author__, __email__, __version__
 
 
