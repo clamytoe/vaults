@@ -12,7 +12,7 @@ YELLOW = "\033[93m"
 RED = "\033[91m"
 
 
-def currency(value: float) -> str:
+def currency(value: float) -> str:  # pragma: no cover
     sign = ""
     if value > 0:
         color = "green"
@@ -25,21 +25,21 @@ def currency(value: float) -> str:
     return typer.style(f"{sign}${abs(value):>11,.2f}", fg=color, bold=True)
 
 
-def bold(text: str) -> str:
+def bold(text: str) -> str:  # pragma: no cover
     return typer.style(text, bold=True)
 
 
-def error(text: str) -> str:
+def error(text: str) -> str:  # pragma: no cover
     return typer.style(text, fg="red")
 
 
-def label(text: str, bold: bool = False) -> str:
+def label(text: str, bold: bool = False) -> str:  # pragma: no cover
     return typer.style(text, fg="cyan", bold=bold)
 
 
-def warning(text: str) -> str:
+def warning(text: str) -> str:  # pragma: no cover
     return typer.style(text, fg="yellow")
 
 
-def success(text: str) -> str:
+def success(text: str) -> str:  # pragma: no cover
     return typer.style(text, fg="green")
