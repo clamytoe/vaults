@@ -15,6 +15,7 @@ from vaults.utils import (
     load_rates,
     load_transactions,
     load_vaults,
+    parse_date,
 )
 
 load_dotenv()
@@ -115,9 +116,10 @@ def vault_statement(
     # Posting delays
     typer.echo("POSTING DELAYS")
     typer.echo(bar)
-    for p in postings:
-        if start_date <= p["posted"] <= end_date:
-            typer.echo(f"{p['initiated']} → posted {p['posted']}")
+    for orig_str, posted_date in postings.items():
+        initiated_date = parse_date(orig_str)
+        if start_date <= posted_date <= end_date:
+            typer.echo(f"{initiated_date} → posted {posted_date}")
     typer.echo("")
 
     # Optional daily table

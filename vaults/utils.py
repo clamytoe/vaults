@@ -97,19 +97,14 @@ def save_vaults(vaults: List[str]) -> None:
 
 def load_postings():
     ensure_postings_file()
-    postings = []
+    postings = {}
     with open(POSTINGS_FILE, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
             orig = row["original"].strip()
             posted = row["posted"].strip()
             if orig and posted:
-                postings.append(
-                    {
-                        "initiated": parse_date(orig),
-                        "posted": parse_date(posted),
-                    }
-                )
+                postings[orig] = parse_date(posted)
     return postings
 
 
@@ -121,11 +116,11 @@ def load_transactions():
     with open(TRANSACTIONS_FILE, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            orig_date_str = row["date"]
+            orig_date_str = row["date"].strip()
 
             # If posting.csv overrides this date, use the posted date
             if orig_date_str in postings:
-                effective_date = parse_date(postings[orig_date_str])
+                effective_date = postings[orig_date_str]
             else:
                 effective_date = parse_date(orig_date_str)
 
@@ -134,7 +129,7 @@ def load_transactions():
                     "vault": row["vault"],
                     "date": effective_date,
                     "amount": float(row["amount"]),
-                    "note": row["note"] if "note" in row else "",
+                    "note": row.get("note", ""),
                 }
             )
     return tx
