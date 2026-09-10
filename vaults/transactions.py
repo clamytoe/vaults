@@ -187,7 +187,7 @@ def transactions_list(
                 else:
                     withdrawals += amt
 
-                typer.echo(f"{date_str:<12}  {amt_str:>12}")
+                typer.echo(f"{date_str:<12}  {amt_str:>12}  {note:<30}")
 
             net = deposits + withdrawals
 
