@@ -18,6 +18,6 @@ app.add_typer(transactions_app, name="transactions")
 app.add_typer(rates_app, name="rates")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     ensure_all()
     app()
