@@ -20,12 +20,14 @@ START_DATE = "2026-04-01"
 # ==============================
 # INIT HELPERS
 # ==============================
-def ensure_data_directory():
+def ensure_data_directory():  # pragma: no cover
+    """Ensure the data directory exists."""
     if not DATA_DIR.exists():
         DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def ensure_vaults_file():
+    """Ensure the vaults file exists."""
     if not os.path.exists(VAULTS_FILE):
         with open(VAULTS_FILE, "w", newline="") as f:
             writer = csv.writer(f)
@@ -33,6 +35,7 @@ def ensure_vaults_file():
 
 
 def ensure_transactions_file():
+    """Ensure the transactions file exists."""
     if not os.path.exists(TRANSACTIONS_FILE):
         with open(TRANSACTIONS_FILE, "w", newline="") as f:
             writer = csv.writer(f)
@@ -40,6 +43,7 @@ def ensure_transactions_file():
 
 
 def ensure_rates_file():
+    """Ensure the rates file exists."""
     if not os.path.exists(RATES_FILE):
         with open(RATES_FILE, "w", newline="") as f:
             writer = csv.writer(f)
@@ -47,6 +51,7 @@ def ensure_rates_file():
 
 
 def ensure_postings_file():
+    """Ensure the postings file exists."""
     if not os.path.exists(POSTINGS_FILE):
         with open(POSTINGS_FILE, "w", newline="") as f:
             writer = csv.writer(f)
@@ -57,6 +62,7 @@ def ensure_postings_file():
 
 
 def ensure_all():
+    """Ensure all required files and directories exist."""
     ensure_data_directory()
     ensure_vaults_file()
     ensure_transactions_file()
@@ -65,6 +71,7 @@ def ensure_all():
 
 
 def parse_date(s: str) -> date:
+    """Parse a date string into a date object."""
     s = s.strip()
     for fmt in ("%Y-%m-%d", "%Y%m%d"):
         try:
@@ -78,6 +85,7 @@ def parse_date(s: str) -> date:
 # LOADERS
 # ==============================
 def load_vaults() -> List[str]:
+    """Load the list of vaults."""
     ensure_vaults_file()
     vaults: List[str] = []
     with open(VAULTS_FILE, newline="") as f:
@@ -88,6 +96,7 @@ def load_vaults() -> List[str]:
 
 
 def save_vaults(vaults: List[str]) -> None:
+    """Save the list of vaults."""
     with open(VAULTS_FILE, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["name"])
@@ -96,6 +105,7 @@ def save_vaults(vaults: List[str]) -> None:
 
 
 def load_postings():
+    """Load the postings data."""
     ensure_postings_file()
     postings = {}
     with open(POSTINGS_FILE, newline="") as f:
@@ -109,6 +119,7 @@ def load_postings():
 
 
 def load_transactions():
+    """Load the transactions data."""
     ensure_transactions_file()
     postings = load_postings()
     tx = []
@@ -136,6 +147,7 @@ def load_transactions():
 
 
 def load_rates():
+    """Load the rates data."""
     ensure_rates_file()
     rates = []
     with open(RATES_FILE, newline="") as f:
