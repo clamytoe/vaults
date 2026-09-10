@@ -65,8 +65,19 @@ def vault_statement(
     typer.echo(f"{BOLD}{date_range.center(83)}{RESET}")
     typer.echo(f"{BOLD}{bar}{RESET}\n")
 
-    # APY
-    apy = rates[-1]["apy"] * 100
+    # Determine APY in effect during the statement period
+    apy_in_effect = None
+    for r in rates:
+        r_start = r["start"]
+        r_end   = r["end"] or end_date
+
+        # Check if rate period overlaps the statement period
+        if r_start <= end_date and r_end >= start_date:
+            apy_in_effect = r["apy"]
+            break
+
+    apy = apy_in_effect * 100 if apy_in_effect is not None else 0
+
     typer.echo(f"        APY in effect: {CYAN}{apy:.4f}%{RESET}")
 
     total_interest = sum(s["interest"] for s in summary_data.values())
@@ -142,11 +153,23 @@ def vault_statement(
         typer.echo(daily_header)
         typer.echo(bar)
 
+        # APY for each day
         for v in vaults:
             for d in sorted(daily_balances[v]):
                 bal = daily_balances[v][d]
-                apy = rates[-1]["apy"] * 100
+
+                # Find rate active on day d
+                day_apy = None
+                for r in rates:
+                    r_start = r["start"]
+                    r_end   = r["end"] or end_date
+                    if r_start <= d <= r_end:
+                        day_apy = r["apy"]
+                        break
+
+                apy = day_apy * 100 if day_apy is not None else 0
                 di = daily_interest[v][d]
+
                 typer.echo(
                     f"{d}   {v:<{COL_VAULT}}  ${bal:>{COL_MONEY},.2f}   {apy:>{COL_APY}.2f}%   ${di:>{COL_MONEY}.2f}"
                 )
