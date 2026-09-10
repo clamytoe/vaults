@@ -16,13 +16,17 @@ from vaults.utils import (
     parse_date,
 )
 
+app = typer.Typer(help="Vault summary commands")
+
 
 # ==============================
-# SUMMARY COMMAND
+# SUMMARY COMMAND (CLI)
 # ==============================
-def summary(
+@app.command(name="summary")
+def summary_cli(
     end: Optional[str] = typer.Option(None, help="End date YYYY-MM-DD"),
 ):
+    """CLI wrapper for printing a vault summary."""
     ensure_all()
 
     vaults = load_vaults()
@@ -62,6 +66,9 @@ def summary(
     print_summary(summary_data, end_date)
 
 
+# ==============================
+# PURE SUMMARY FUNCTION (TESTED)
+# ==============================
 def summarize_month(
     daily_balances, daily_interest, transactions, vaults, start_date, end_date
 ):
@@ -72,38 +79,40 @@ def summarize_month(
         if t["vault"] in tx_by_vault:
             tx_by_vault[t["vault"]].append(t)
 
-    try:
-        for v in vaults:
-            start = daily_balances[v][start_date]
-            end = daily_balances[v][end_date]
-            deposits = sum(
-                t["amount"]
-                for t in tx_by_vault[v]
-                if t["amount"] > 0 and start_date <= t["date"] <= end_date
-            )
-            withdrawals = sum(
-                -t["amount"]
-                for t in tx_by_vault[v]
-                if t["amount"] < 0 and start_date <= t["date"] <= end_date
-            )
-            interest = sum(daily_interest[v].values())
+    for v in vaults:
+        if start_date not in daily_balances[v] or end_date not in daily_balances[v]:
+            raise KeyError(f"Missing balance data for vault {v}")
 
-            summary[v] = {
-                "start": start,
-                "end": end,
-                "deposits": deposits,
-                "withdrawals": withdrawals,
-                "interest": interest,
-            }
-    except KeyError as e:
-        typer.echo(f"Error: There is no data before {e.args[0]}.")
-        raise typer.Exit()
+        start = daily_balances[v][start_date]
+        end = daily_balances[v][end_date]
+
+        deposits = sum(
+            t["amount"]
+            for t in tx_by_vault[v]
+            if t["amount"] > 0 and start_date <= t["date"] <= end_date
+        )
+
+        withdrawals = sum(
+            -t["amount"]
+            for t in tx_by_vault[v]
+            if t["amount"] < 0 and start_date <= t["date"] <= end_date
+        )
+
+        interest = sum(daily_interest[v].values())
+
+        summary[v] = {
+            "start": start,
+            "end": end,
+            "deposits": deposits,
+            "withdrawals": withdrawals,
+            "interest": interest,
+        }
 
     return summary
 
 
 # ==============================
-# SUMMARY
+# PRINT SUMMARY (CLI)
 # ==============================
 def print_summary(summary_data, end_date):
     print("\nVault Summary", f"{end_date.isoformat():>47}")
@@ -119,6 +128,7 @@ def print_summary(summary_data, end_date):
 
     for v, s in summary_data.items():
         principal = s["deposits"] - s["withdrawals"]
+
         if v == "Interest":
             interest = 0
             total = 0
@@ -155,13 +165,11 @@ def normalize_end_date(end_str):
     Returns a datetime.date representing the final day of that period.
     """
     try:
-        # Case 1: full date YYYY-MM-DD
         return datetime.strptime(end_str, "%Y-%m-%d").date()
     except ValueError:
         pass
 
     try:
-        # Case 2: year-month YYYY-MM → convert to last day of month
         year, month = map(int, end_str.split("-"))
         last_day = calendar.monthrange(year, month)[1]
         return datetime(year, month, last_day).date()
