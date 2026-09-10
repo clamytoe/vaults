@@ -1,7 +1,7 @@
+import calendar
 from datetime import date, datetime
 from typing import Optional
 
-import calendar
 import typer
 
 from vaults.balances import get_daily_balances
@@ -151,8 +151,7 @@ def print_summary(summary_data, end_date):
 # NORMALIZE END DATE
 # ==============================
 def normalize_end_date(end_str):
-    """
-    Accepts either YYYY-MM-DD or YYYY-MM.
+    """Accepts either YYYY-MM-DD or YYYY-MM.
     Returns a datetime.date representing the final day of that period.
     """
     try:
